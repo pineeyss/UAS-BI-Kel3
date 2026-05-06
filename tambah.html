@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tambah Pengajuan — Monitoring Perbaikan Jalan</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .tingkat-opts { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .tingkat-opt {
+    border: 2px solid var(--border); border-radius: 10px;
+    padding: 12px 10px; cursor: pointer; transition: all 0.15s;
+    text-align: center; font-size: 13px; font-weight: 600;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .tingkat-opt .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .tingkat-opt:hover { border-color: var(--blue-light); }
+  .tingkat-opt.selected-ringan { border-color: #10b981; background: #d1fae5; color: #065f46; }
+  .tingkat-opt.selected-sedang { border-color: #f5a623; background: #fff4d6; color: #b07800; }
+  .tingkat-opt.selected-berat { border-color: #e05c5c; background: #fee2e2; color: #991b1b; }
+
+  .jenis-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .jenis-opt {
+    border: 2px solid var(--border); border-radius: 10px;
+    padding: 12px 8px; cursor: pointer; transition: all 0.15s;
+    text-align: center; font-size: 12px; font-weight: 500;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .jenis-opt .jenis-icon { font-size: 22px; }
+  .jenis-opt:hover { border-color: var(--blue-light); background: var(--blue-pale); }
+  .jenis-opt.selected { border-color: var(--blue); background: var(--blue-pale); color: var(--blue); }
+  .jenis-opt.selected .jenis-icon { filter: none; }
+
+  .success-banner {
+    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+    border: 1px solid #6ee7b7;
+    border-radius: 14px;
+    padding: 24px;
+    text-align: center;
+    display: none;
+    margin-bottom: 24px;
+  }
+  .success-banner.show { display: block; }
+  .success-banner h3 { color: #065f46; font-size: 16px; margin-bottom: 8px; }
+  .success-banner p { color: #047857; font-size: 13px; }
+  .no-pengajuan-big {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    color: #059669;
+    background: white;
+    padding: 8px 20px;
+    border-radius: 8px;
+    display: inline-block;
+    margin: 10px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+</style>
+</head>
+<body>
+<div class="sidebar" id="sidebar"></div>
+<div class="main">
+  <div class="topbar" id="topbar"></div>
+  <div class="content">
+
+    <div class="success-banner" id="successBanner">
+      <div style="font-size:32px;margin-bottom:8px;">✅</div>
+      <h3>Pengajuan Berhasil Dikirim!</h3>
+      <p>Nomor Pengajuan Anda:</p>
+      <div class="no-pengajuan-big" id="successNo"></div>
+      <p style="margin-top:8px;">Simpan nomor ini untuk memantau status pengajuan Anda.</p>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:16px;">
+        <a href="pengajuan.html" class="btn btn-primary">Lihat Semua Data</a>
+        <button class="btn btn-secondary" onclick="resetForm()">Buat Pengajuan Baru</button>
+      </div>
+    </div>
+
+    <div id="formSection">
+      <div class="card">
+        <div class="card-head">
+          <div class="card-head-title">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            Form Pengajuan Perbaikan Jalan
+          </div>
+        </div>
+        <div class="card-body">
+
+          <div class="alert alert-error" id="alertError" style="display:none;">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span id="errorMsg"></span>
+          </div>
+
+          <div class="form-grid">
+
+            <!-- Seksi Pelapor -->
+            <div class="section-label">
+              <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              Data Pelapor
+            </div>
+
+            <div class="form-group">
+              <label>Nama Pelapor <span class="req">*</span></label>
+              <input type="text" id="namaPelapor" placeholder="Nama lengkap">
+            </div>
+            <div class="form-group">
+              <label>No. HP / WhatsApp</label>
+              <input type="text" id="noHp" placeholder="08xxxxxxxxxx">
+            </div>
+
+            <!-- Seksi Lokasi -->
+            <div class="section-label">
+              <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Data Lokasi
+            </div>
+
+            <div class="form-group form-full">
+              <label>Alamat / Lokasi Jalan <span class="req">*</span></label>
+              <input type="text" id="lokasi" placeholder="Contoh: Jl. Ahmad Yani No. 15, depan toko Maju">
+            </div>
+            <div class="form-group">
+              <label>Kecamatan <span class="req">*</span></label>
+              <input type="text" id="kecamatan" placeholder="Nama kecamatan">
+            </div>
+            <div class="form-group">
+              <label>Kelurahan <span class="req">*</span></label>
+              <input type="text" id="kelurahan" placeholder="Nama kelurahan">
+            </div>
+
+            <!-- Seksi Kerusakan -->
+            <div class="section-label">
+              <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              Data Kerusakan
+            </div>
+
+            <div class="form-group form-full">
+              <label>Jenis Kerusakan <span class="req">*</span></label>
+              <div class="jenis-grid">
+                <div class="jenis-opt" onclick="selectJenis(this, 'Berlubang')">
+                  <span class="jenis-icon">🕳️</span>
+                  Berlubang
+                </div>
+                <div class="jenis-opt" onclick="selectJenis(this, 'Retak')">
+                  <span class="jenis-icon">⚡</span>
+                  Retak
+                </div>
+                <div class="jenis-opt" onclick="selectJenis(this, 'Longsor')">
+                  <span class="jenis-icon">⛰️</span>
+                  Longsor
+                </div>
+                <div class="jenis-opt" onclick="selectJenis(this, 'Banjir')">
+                  <span class="jenis-icon">🌊</span>
+                  Banjir
+                </div>
+                <div class="jenis-opt" onclick="selectJenis(this, 'Lainnya')">
+                  <span class="jenis-icon">🔧</span>
+                  Lainnya
+                </div>
+              </div>
+              <input type="hidden" id="jenisKerusakan">
+            </div>
+
+            <div class="form-group form-full">
+              <label>Tingkat Kerusakan <span class="req">*</span></label>
+              <div class="tingkat-opts">
+                <div class="tingkat-opt" onclick="selectTingkat(this, 'Ringan')">
+                  <span class="dot" style="background:#10b981;"></span>
+                  🟢 Ringan
+                </div>
+                <div class="tingkat-opt" onclick="selectTingkat(this, 'Sedang')">
+                  <span class="dot" style="background:#f5a623;"></span>
+                  🟡 Sedang
+                </div>
+                <div class="tingkat-opt" onclick="selectTingkat(this, 'Berat')">
+                  <span class="dot" style="background:#e05c5c;"></span>
+                  🔴 Berat
+                </div>
+              </div>
+              <input type="hidden" id="tingkatKerusakan">
+            </div>
+
+            <div class="form-group form-full">
+              <label>Deskripsi Kerusakan</label>
+              <textarea id="deskripsi" rows="3" placeholder="Jelaskan kondisi kerusakan secara detail..."></textarea>
+            </div>
+
+            <!-- Tombol -->
+            <div class="form-full" style="display:flex;gap:12px;margin-top:8px;">
+              <button class="btn btn-primary" onclick="submitForm()" style="padding:11px 28px;">
+                <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22,2 15,22 11,13 2,9 22,2"/></svg>
+                Kirim Pengajuan
+              </button>
+              <a href="pengajuan.html" class="btn btn-secondary">Batal</a>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+  if (!requireLogin()) throw new Error();
+  renderSidebar('tambah');
+  renderTopbar('Tambah Pengajuan', 'Isi formulir pengajuan perbaikan jalan');
+
+  let selectedJenis = '';
+  let selectedTingkat = '';
+
+  function selectJenis(el, val) {
+    document.querySelectorAll('.jenis-opt').forEach(x => x.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedJenis = val;
+    document.getElementById('jenisKerusakan').value = val;
+  }
+
+  function selectTingkat(el, val) {
+    document.querySelectorAll('.tingkat-opt').forEach(x => {
+      x.className = 'tingkat-opt';
+    });
+    el.classList.add(`selected-${val.toLowerCase()}`);
+    selectedTingkat = val;
+    document.getElementById('tingkatKerusakan').value = val;
+  }
+
+  function showError(msg) {
+    document.getElementById('errorMsg').textContent = msg;
+    document.getElementById('alertError').style.display = 'flex';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function submitForm() {
+    const nama = document.getElementById('namaPelapor').value.trim();
+    const lokasi = document.getElementById('lokasi').value.trim();
+    const kecamatan = document.getElementById('kecamatan').value.trim();
+    const kelurahan = document.getElementById('kelurahan').value.trim();
+
+    document.getElementById('alertError').style.display = 'none';
+
+    if (!nama) return showError('Nama pelapor wajib diisi!');
+    if (!lokasi) return showError('Lokasi jalan wajib diisi!');
+    if (!kecamatan) return showError('Kecamatan wajib diisi!');
+    if (!kelurahan) return showError('Kelurahan wajib diisi!');
+    if (!selectedJenis) return showError('Pilih jenis kerusakan terlebih dahulu!');
+    if (!selectedTingkat) return showError('Pilih tingkat kerusakan terlebih dahulu!');
+
+    const user = getUser();
+    const no = genNoPengajuan();
+    const all = getData();
+
+    const newItem = {
+      id: Date.now(),
+      no_pengajuan: no,
+      nama_pelapor: nama,
+      no_hp: document.getElementById('noHp').value.trim(),
+      lokasi,
+      kecamatan,
+      kelurahan,
+      jenis_kerusakan: selectedJenis,
+      tingkat_kerusakan: selectedTingkat,
+      deskripsi: document.getElementById('deskripsi').value.trim(),
+      foto: null,
+      status: 'Pending',
+      catatan_admin: '',
+      user_id: user.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    all.push(newItem);
+    saveData(all);
+
+    // Show success
+    document.getElementById('successNo').textContent = no;
+    document.getElementById('successBanner').classList.add('show');
+    document.getElementById('formSection').style.display = 'none';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function resetForm() {
+    document.getElementById('successBanner').classList.remove('show');
+    document.getElementById('formSection').style.display = 'block';
+    document.getElementById('namaPelapor').value = '';
+    document.getElementById('noHp').value = '';
+    document.getElementById('lokasi').value = '';
+    document.getElementById('kecamatan').value = '';
+    document.getElementById('kelurahan').value = '';
+    document.getElementById('deskripsi').value = '';
+    document.querySelectorAll('.jenis-opt').forEach(x => x.classList.remove('selected'));
+    document.querySelectorAll('.tingkat-opt').forEach(x => x.className = 'tingkat-opt');
+    selectedJenis = '';
+    selectedTingkat = '';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>

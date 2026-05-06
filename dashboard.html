@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Monitoring Perbaikan Jalan</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  .db-grid { display: grid; grid-template-columns: 5fr 4fr; gap: 20px; }
+  .chart-wrap { position: relative; height: 230px; display: flex; align-items: center; justify-content: center; }
+  @media (max-width: 1000px) { .db-grid { grid-template-columns: 1fr; } .stat-grid { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+<div class="sidebar" id="sidebar"></div>
+<div class="main">
+  <div class="topbar" id="topbar"></div>
+  <div class="content">
+
+    <div class="flex gap-2" style="justify-content:space-between;margin-bottom:24px;">
+      <div>
+        <h3 style="font-size:18px;font-weight:700;" id="greet">Selamat datang!</h3>
+        <p class="text-muted mt-1">Ringkasan data monitoring perbaikan jalan.</p>
+      </div>
+      <a href="tambah.html" class="btn btn-primary">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Tambah Pengajuan
+      </a>
+    </div>
+
+    <!-- Stat cards -->
+    <div class="stat-grid" id="statGrid"></div>
+
+    <!-- Charts + table -->
+    <div class="db-grid">
+      <!-- Tabel terbaru -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-head-title">
+            <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            Pengajuan Terbaru
+          </div>
+          <a href="pengajuan.html" class="btn btn-secondary btn-sm">Lihat Semua</a>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>No. Pengajuan</th>
+                <th>Lokasi</th>
+                <th>Jenis</th>
+                <th>Status</th>
+                <th>Tgl</th>
+              </tr>
+            </thead>
+            <tbody id="recentTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Chart -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-head-title">
+            <svg viewBox="0 0 24 24"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+            Distribusi Status
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="chart-wrap">
+            <canvas id="statusChart"></canvas>
+          </div>
+          <div id="chartLegend" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bar chart jenis kerusakan -->
+    <div class="card mt-3">
+      <div class="card-head">
+        <div class="card-head-title">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
+          Rekap Jenis Kerusakan
+        </div>
+      </div>
+      <div class="card-body">
+        <canvas id="jenisChart" height="80"></canvas>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+  if (!requireLogin()) throw new Error('Not logged in');
+  const user = getUser();
+
+  renderSidebar('dashboard');
+  renderTopbar('Dashboard', 'Monitoring Perbaikan Jalan');
+  document.getElementById('greet').textContent = `Selamat datang, ${user.nama}!`;
+
+  function buildStats() {
+    const all = getData();
+    const total = all.length;
+    const pending = all.filter(x => x.status === 'Pending').length;
+    const diproses = all.filter(x => x.status === 'Diproses').length;
+    const selesai = all.filter(x => x.status === 'Selesai').length;
+    const ditolak = all.filter(x => x.status === 'Ditolak').length;
+
+    const cards = [
+      { label: 'Total Pengajuan', num: total, cls: 'sc-navy', icon: `<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/>` },
+      { label: 'Pending', num: pending, cls: 'sc-gold', icon: `<circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/>` },
+      { label: 'Diproses', num: diproses, cls: 'sc-cyan', icon: `<circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>` },
+      { label: 'Selesai', num: selesai, cls: 'sc-green', icon: `<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/>` },
+    ];
+
+    document.getElementById('statGrid').innerHTML = cards.map(c => `
+      <div class="stat-card ${c.cls}">
+        <div class="sc-num">${c.num}</div>
+        <div class="sc-label">${c.label}</div>
+        <div class="sc-icon"><svg viewBox="0 0 24 24">${c.icon}</svg></div>
+      </div>
+    `).join('');
+
+    return { all, total, pending, diproses, selesai, ditolak };
+  }
+
+  function buildRecent(all) {
+    const recent = [...all].sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0,6);
+    const tbody = document.getElementById('recentTbody');
+    if (recent.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg><p>Belum ada data pengajuan</p></div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = recent.map(r => `
+      <tr>
+        <td class="text-mono" style="color:var(--blue);font-weight:600;">${r.no_pengajuan}</td>
+        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r.lokasi}">${r.lokasi}</td>
+        <td><span style="font-size:12px;color:var(--text-mid);">${r.jenis_kerusakan}</span></td>
+        <td>${renderBadgeStatus(r.status)}</td>
+        <td class="text-muted no-wrap">${fmtDate(r.created_at)}</td>
+      </tr>
+    `).join('');
+  }
+
+  function buildCharts(stats) {
+    const colors = ['#f5a623','#3584e4','#10b981','#e05c5c'];
+    const labels = ['Pending','Diproses','Selesai','Ditolak'];
+    const values = [stats.pending, stats.diproses, stats.selesai, stats.ditolak];
+
+    // Donut
+    const ctx1 = document.getElementById('statusChart').getContext('2d');
+    new Chart(ctx1, {
+      type: 'doughnut',
+      data: {
+        labels,
+        datasets: [{ data: values, backgroundColor: colors, borderWidth: 0, hoverOffset: 6 }]
+      },
+      options: {
+        cutout: '70%',
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed}` } } }
+      }
+    });
+
+    // Legend
+    document.getElementById('chartLegend').innerHTML = labels.map((l, i) => `
+      <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-mid);">
+        <span style="width:10px;height:10px;border-radius:3px;background:${colors[i]};flex-shrink:0;display:inline-block;"></span>
+        ${l} <b style="margin-left:auto;color:var(--text);">${values[i]}</b>
+      </div>
+    `).join('');
+
+    // Bar chart - jenis
+    const jenisTypes = ['Berlubang','Retak','Longsor','Banjir','Lainnya'];
+    const jenisCounts = jenisTypes.map(j => stats.all.filter(x => x.jenis_kerusakan === j).length);
+    const ctx2 = document.getElementById('jenisChart').getContext('2d');
+    new Chart(ctx2, {
+      type: 'bar',
+      data: {
+        labels: jenisTypes,
+        datasets: [{
+          label: 'Jumlah',
+          data: jenisCounts,
+          backgroundColor: 'rgba(26,95,180,0.12)',
+          borderColor: 'rgba(26,95,180,0.6)',
+          borderWidth: 2,
+          borderRadius: 6,
+          hoverBackgroundColor: 'rgba(26,95,180,0.25)',
+        }]
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { stepSize: 1, font: { family: 'Sora', size: 11 } } },
+          x: { grid: { display: false }, ticks: { font: { family: 'Sora', size: 12 } } }
+        }
+      }
+    });
+  }
+
+  const stats = buildStats();
+  buildRecent(stats.all);
+  buildCharts(stats);
+</script>
+</body>
+</html>
