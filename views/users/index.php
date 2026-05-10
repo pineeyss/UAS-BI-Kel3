@@ -1,6 +1,8 @@
 <?php
 // views/users/index.php
-// Required: $users, $stats, $countPerUser
+$users = $users ?? [];
+$stats = $stats ?? ['total' => 0, 'pending' => 0];
+$countPerUser = $countPerUser ?? [];
 ?>
 
 <div class="page-body">

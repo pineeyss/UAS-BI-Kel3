@@ -1,6 +1,6 @@
 <?php
 // views/pengajuan/index.php
-// Required: $data, $filter
+$filter = $filter ?? ['search' => '', 'status' => '', 'tingkat' => ''];
 ?>
 
 <div class="page-body">
