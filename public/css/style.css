@@ -244,16 +244,10 @@ body{
 ========================= */
 
 .topbar{
-    height:90px;
-    background:#fff;
-    border-radius:24px;
-    padding:0 28px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    margin-bottom:28px;
-    box-shadow:
-        0 4px 20px rgba(0,0,0,.04);
+    background:transparent;
+    padding:0;
+    box-shadow:none;
+    margin-bottom:24px;
 }
 
 .page-title{
@@ -638,6 +632,41 @@ body{
 .card-body.p-0 { padding: 0; }
 
 .header-actions { display: flex; align-items: center; gap: 8px; }
+
+.page-header-modern{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:#fff;
+    padding:22px 28px;
+    border-radius:24px;
+    margin-bottom:28px;
+    box-shadow:0 4px 14px rgba(0,0,0,.06);
+}
+
+.page-title-modern{
+    font-size:32px;
+    font-weight:800;
+    color:#0f172a;
+    margin:0;
+}
+
+.page-subtitle{
+    margin-top:6px;
+    color:#64748b;
+    font-size:16px;
+}
+
+.page-role{
+    background:#dbeafe;
+    color:#2563eb;
+    padding:12px 18px;
+    border-radius:999px;
+    font-weight:700;
+    display:flex;
+    gap:10px;
+    align-items:center;
+}
 
 /* ---- KPI Grid ---- */
 .kpi-grid {

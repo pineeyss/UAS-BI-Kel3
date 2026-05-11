@@ -165,32 +165,38 @@
         <!-- MAIN -->
         <main class="main-content">
 
-            <!-- TOPBAR -->
-            <header class="topbar">
+        <!-- TOPBAR -->
+        <header class="topbar">
+
+            <div class="page-header-modern">
 
                 <div>
-                    <h1 class="page-title">
-                        <?= htmlspecialchars($title ?? 'Dashboard') ?>
+
+                    <h1 class="page-title-modern">
+
+                        <?= htmlspecialchars($title ?? '') ?>
+
                     </h1>
 
                     <p class="page-subtitle">
+
                         Sistem Informasi Monitoring Perbaikan Jalan
+
                     </p>
+
                 </div>
 
-                <?php if (isset($_SESSION['user'])): ?>
+                <div class="page-role">
 
-                    <div class="topbar-profile">
+                    <i class="fa-solid fa-user-shield"></i>
 
-                        <div class="profile-role role-<?= $_SESSION['user']['role'] ?>">
-                            <?= ucfirst($_SESSION['user']['role']) ?>
-                        </div>
+                    <?= ucfirst($_SESSION['role'] ?? '') ?>
 
-                    </div>
+                </div>
 
-                <?php endif; ?>
+            </div>
 
-            </header>
+        </header>
 
             <!-- FLASH -->
             <?php if (!empty($_SESSION['flash'])): ?>
