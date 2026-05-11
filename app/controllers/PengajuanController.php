@@ -1,137 +1,224 @@
 <?php
+require_once ROOT . '/core/Controller.php';
+require_once ROOT . '/app/models/PengajuanModel.php';
 
-class PengajuanController
+class PengajuanController extends Controller
 {
+
     private PengajuanModel $model;
 
     public function __construct()
     {
-        requireLogin();
         $this->model = new PengajuanModel();
     }
 
-    /** GET /pengajuan.php */
     public function index(): void
     {
+        $this->requireLogin();
+
         $filter = [
-            'status'  => $_GET['status']  ?? '',
-            'tingkat' => $_GET['tingkat'] ?? '',
-            'search'  => $_GET['search']  ?? '',
+            'status'    => $this->get('status'),
+            'kecamatan' => $this->get('kecamatan'),
+            'search'    => $this->get('search'),
+            'tanggal_dari'    => $this->get('tanggal_dari'),
+            'tanggal_sampai'  => $this->get('tanggal_sampai'),
         ];
-        if (!isAdmin()) {
-            $filter['user_id'] = currentUser()['id'];
-        }
-        $data = $this->model->all($filter);
 
-        $pageTitle  = 'Daftar Pengajuan';
-        $activeMenu = 'pengajuan';
+        $page    = max(1, (int)$this->get('page', 1));
+        $perPage = 15;
+        $total   = $this->model->countWithFilter($filter);
+        $data    = $this->model->findAllWithFilter($filter, $page, $perPage);
+        $kecList = $this->model->getKecamatanList();
 
-        include __DIR__ . '/../partials/header.php';
-        include __DIR__ . '/../Views/pengajuan/index.php';
-        include __DIR__ . '/../partials/footer.php';
+        $this->view('pengajuan/index', [
+            'title'      => 'Data Pengajuan',
+            'pengajuan'  => $data,
+            'filter'     => $filter,
+            'kecList'    => $kecList,
+            'page'       => $page,
+            'perPage'    => $perPage,
+            'total'      => $total,
+            'totalPages' => ceil($total / $perPage),
+        ]);
     }
 
-    /** GET /tambah.php */
     public function create(): void
     {
-        $pageTitle    = 'Tambah Pengajuan';
-        $pageSubtitle = 'Isi formulir dengan lengkap dan benar';
-        $activeMenu   = 'tambah';
+        $this->requireLogin();
 
-        include __DIR__ . '/../partials/header.php';
-        include __DIR__ . '/../Views/pengajuan/create.php';
-        include __DIR__ . '/../partials/footer.php';
-    }
+        $errors = [];
+        $old    = [];
 
-    /** POST /tambah.php */
-    public function store(): void
-    {
-        verifyCsrf();
+        if ($this->isPost()) {
+            $old = $_POST;
 
-        $required = ['nama_pelapor', 'lokasi', 'kecamatan', 'kelurahan', 'jenis_kerusakan', 'tingkat_kerusakan'];
-        foreach ($required as $field) {
-            if (empty($_POST[$field])) {
-                jsonResponse(['error' => "Field $field wajib diisi."], 422);
+            $required = ['nama_pelapor', 'no_hp', 'lokasi', 'kecamatan', 'kelurahan', 'jenis_kerusakan', 'tingkat_kerusakan'];
+            foreach ($required as $field) {
+                if (empty($this->post($field))) {
+                    $errors[$field] = 'Wajib diisi.';
+                }
+            }
+
+            $foto = null;
+            if (!empty($_FILES['foto']['name'])) {
+                $uploadResult = $this->uploadFoto($_FILES['foto']);
+                if ($uploadResult['error']) {
+                    $errors['foto'] = $uploadResult['error'];
+                } else {
+                    $foto = $uploadResult['filename'];
+                }
+            }
+
+            if (empty($errors)) {
+                $this->model->create([
+                    'nama_pelapor'     => $this->post('nama_pelapor'),
+                    'no_hp'            => $this->post('no_hp'),
+                    'lokasi'           => $this->post('lokasi'),
+                    'kecamatan'        => $this->post('kecamatan'),
+                    'kelurahan'        => $this->post('kelurahan'),
+                    'jenis_kerusakan'  => $this->post('jenis_kerusakan'),
+                    'tingkat_kerusakan' => $this->post('tingkat_kerusakan'),
+                    'num_potholes'     => (int)$this->post('num_potholes', 0),
+                    'deskripsi'        => $this->post('deskripsi'),
+                    'foto'             => $foto,
+                    'user_id'          => $_SESSION['user_id'],
+                ]);
+
+                $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Pengajuan berhasil ditambahkan.'];
+                $this->redirect('pengajuan');
             }
         }
 
-        // Upload foto
-        $fotoPath = null;
-        if (!empty($_FILES['foto']['name'])) {
-            $ext   = strtolower(pathinfo($_FILES['foto']['name'], PATHINFO_EXTENSION));
-            $allow = ['jpg', 'jpeg', 'png', 'webp'];
-            if (!in_array($ext, $allow)) {
-                jsonResponse(['error' => 'Format foto tidak didukung. Gunakan JPG, PNG, atau WebP.'], 422);
-            }
-            if ($_FILES['foto']['size'] > 5_000_000) {
-                jsonResponse(['error' => 'Ukuran foto maksimal 5MB.'], 422);
-            }
-            if (!is_dir(UPLOAD_DIR)) mkdir(UPLOAD_DIR, 0755, true);
-            $filename = uniqid('foto_', true) . '.' . $ext;
-            if (!move_uploaded_file($_FILES['foto']['tmp_name'], UPLOAD_DIR . $filename)) {
-                jsonResponse(['error' => 'Gagal menyimpan foto.'], 500);
-            }
-            $fotoPath = $filename;
-        }
-
-        $user = currentUser();
-        $id   = $this->model->create([
-            'no_pengajuan'      => generateNoPengajuan(),
-            'nama_pelapor'      => sanitize($_POST['nama_pelapor']),
-            'no_hp'             => sanitize($_POST['no_hp'] ?? ''),
-            'lokasi'            => sanitize($_POST['lokasi']),
-            'kecamatan'         => sanitize($_POST['kecamatan']),
-            'kelurahan'         => sanitize($_POST['kelurahan']),
-            'jenis_kerusakan'   => $_POST['jenis_kerusakan'],
-            'tingkat_kerusakan' => $_POST['tingkat_kerusakan'],
-            'num_potholes'      => max(0, (int)($_POST['num_potholes'] ?? 0)),
-            'deskripsi'         => sanitize($_POST['deskripsi'] ?? ''),
-            'foto'              => $fotoPath,
-            'user_id'           => $user['id'],
+        $this->view('pengajuan/form', [
+            'title'  => 'Tambah Pengajuan',
+            'action' => 'create',
+            'errors' => $errors,
+            'old'    => $old,
         ]);
+    }
+
+    public function edit(int $id): void
+    {
+        $this->requireAdmin();
+
+        $item   = $this->model->findById($id);
+        $errors = [];
+        $old    = $item ?: [];
+
+        if (!$item) {
+            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Data tidak ditemukan.'];
+            $this->redirect('pengajuan');
+        }
+
+        if ($this->isPost()) {
+            $old = $_POST;
+
+            $required = ['nama_pelapor', 'no_hp', 'lokasi', 'kecamatan', 'kelurahan', 'jenis_kerusakan', 'tingkat_kerusakan'];
+            foreach ($required as $field) {
+                if (empty($this->post($field))) {
+                    $errors[$field] = 'Wajib diisi.';
+                }
+            }
+
+            $foto = $item['foto'];
+            if (!empty($_FILES['foto']['name'])) {
+                $uploadResult = $this->uploadFoto($_FILES['foto']);
+                if ($uploadResult['error']) {
+                    $errors['foto'] = $uploadResult['error'];
+                } else {
+                    $foto = $uploadResult['filename'];
+                }
+            }
+
+            if (empty($errors)) {
+                $this->model->update($id, [
+                    'nama_pelapor'      => $this->post('nama_pelapor'),
+                    'no_hp'             => $this->post('no_hp'),
+                    'lokasi'            => $this->post('lokasi'),
+                    'kecamatan'         => $this->post('kecamatan'),
+                    'kelurahan'         => $this->post('kelurahan'),
+                    'jenis_kerusakan'   => $this->post('jenis_kerusakan'),
+                    'tingkat_kerusakan' => $this->post('tingkat_kerusakan'),
+                    'num_potholes'      => (int)$this->post('num_potholes', 0),
+                    'deskripsi'         => $this->post('deskripsi'),
+                    'foto'              => $foto,
+                ]);
+
+                $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Data berhasil diperbarui.'];
+                $this->redirect('pengajuan');
+            }
+        }
+
+        $this->view('pengajuan/form', [
+            'title'  => 'Edit Pengajuan',
+            'action' => 'edit',
+            'item'   => $item,
+            'errors' => $errors,
+            'old'    => $old,
+        ]);
+    }
+
+    public function detail(int $id): void
+    {
+        $this->requireLogin();
 
         $item = $this->model->findById($id);
-        jsonResponse(['success' => true, 'no_pengajuan' => $item['no_pengajuan'], 'id' => $id]);
-    }
-
-    /** GET /api/pengajuan.php?id=X */
-    public function show(int $id): void
-    {
-        $item = $this->model->findById($id);
-        if (!$item) jsonResponse(['error' => 'Data tidak ditemukan.'], 404);
-        if (!isAdmin() && $item['user_id'] != currentUser()['id']) {
-            jsonResponse(['error' => 'Akses ditolak.'], 403);
+        if (!$item) {
+            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Data tidak ditemukan.'];
+            $this->redirect('pengajuan');
         }
-        jsonResponse($item);
+
+        $this->view('pengajuan/detail', [
+            'title' => 'Detail Pengajuan',
+            'item'  => $item,
+        ]);
     }
 
-    /** POST /api/status.php */
-    public function updateStatus(): void
+    public function status(int $id): void
     {
-        requireAdmin();
-        verifyCsrf();
+        $this->requireAdmin();
 
-        $id      = (int)($_POST['id'] ?? 0);
-        $status  = $_POST['status'] ?? '';
-        $catatan = sanitize($_POST['catatan'] ?? '');
-        $valid   = ['Pending', 'Diproses', 'Selesai', 'Ditolak'];
-
-        if (!$id || !in_array($status, $valid)) {
-            jsonResponse(['error' => 'Data tidak valid.'], 422);
+        if ($this->isPost()) {
+            $status  = $this->post('status');
+            $catatan = $this->post('catatan_admin');
+            $allowed = ['Pending', 'Diproses', 'Selesai', 'Ditolak'];
+            if (in_array($status, $allowed)) {
+                $this->model->updateStatus($id, $status, $catatan);
+                $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Status berhasil diperbarui.'];
+            }
         }
-        $this->model->updateStatus($id, $status, $catatan);
-        jsonResponse(['success' => true]);
+
+        $this->redirect('pengajuan/detail/' . $id);
     }
 
-    /** POST /api/delete.php */
-    public function delete(): void
+    public function delete(int $id): void
     {
-        requireAdmin();
-        verifyCsrf();
-
-        $id = (int)($_POST['id'] ?? 0);
-        if (!$id) jsonResponse(['error' => 'ID tidak valid.'], 422);
+        $this->requireAdmin();
         $this->model->delete($id);
-        jsonResponse(['success' => true]);
+        $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Data berhasil dihapus.'];
+        $this->redirect('pengajuan');
+    }
+
+    private function uploadFoto(array $file): array
+    {
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+        $maxSize      = 2 * 1024 * 1024; // 2MB
+
+        if (!in_array($file['type'], $allowedTypes)) {
+            return ['error' => 'Format file harus JPG atau PNG.', 'filename' => null];
+        }
+        if ($file['size'] > $maxSize) {
+            return ['error' => 'Ukuran file maksimal 2MB.', 'filename' => null];
+        }
+
+        $ext      = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $filename = 'foto_' . uniqid() . '.' . $ext;
+        $dest     = ROOT . '/public/uploads/' . $filename;
+
+        if (!move_uploaded_file($file['tmp_name'], $dest)) {
+            return ['error' => 'Gagal mengupload file.', 'filename' => null];
+        }
+
+        return ['error' => null, 'filename' => $filename];
     }
 }

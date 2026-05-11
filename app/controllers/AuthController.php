@@ -1,8 +1,10 @@
 <?php
-// app/Controllers/AuthController.php
+require_once ROOT . '/core/Controller.php';
+require_once ROOT . '/app/models/UserModel.php';
 
-class AuthController
+class AuthController extends Controller
 {
+
     private UserModel $userModel;
 
     public function __construct()
@@ -10,44 +12,40 @@ class AuthController
         $this->userModel = new UserModel();
     }
 
-    /** GET /login.php */
-    public function showLogin(): void
+    public function login(): void
     {
-        if (isLoggedIn()) redirect('dashboard.php');
-        $error = null;
-        include __DIR__ . '/../Views/auth/login.php';
-    }
-
-    /** POST /login.php */
-    public function handleLogin(): void
-    {
-        $username = trim($_POST['username'] ?? '');
-        $password = trim($_POST['password'] ?? '');
-        $error    = null;
-
-        if ($username && $password) {
-            $user = $this->userModel->findByUsername($username);
-            if ($user && $this->userModel->verifyPassword($password, $user['password'])) {
-                session_regenerate_id(true);
-                $_SESSION['user_id']       = $user['id'];
-                $_SESSION['user_nama']     = $user['nama'];
-                $_SESSION['user_username'] = $user['username'];
-                $_SESSION['user_role']     = $user['role'];
-                redirect('dashboard.php');
-            } else {
-                $error = 'Username atau password salah.';
-            }
-        } else {
-            $error = 'Harap isi semua kolom.';
+        if ($this->isLoggedIn()) {
+            $this->redirect('dashboard');
         }
 
-        include __DIR__ . '/../Views/auth/login.php';
+        $error = '';
+
+        if ($this->isPost()) {
+            $username = $this->post('username');
+            $password = $this->post('password');
+
+            if (empty($username) || empty($password)) {
+                $error = 'Username dan password wajib diisi.';
+            } else {
+                $user = $this->userModel->findByUsername($username);
+                if ($user && password_verify($password, $user['password'])) {
+                    $_SESSION['user_id']  = $user['id'];
+                    $_SESSION['username'] = $user['username'];
+                    $_SESSION['nama']     = $user['nama'];
+                    $_SESSION['role']     = $user['role'];
+                    $this->redirect('dashboard');
+                } else {
+                    $error = 'Username atau password salah.';
+                }
+            }
+        }
+
+        $this->view('auth/login', ['error' => $error]);
     }
 
-    /** GET /logout.php */
     public function logout(): void
     {
         session_destroy();
-        redirect('login.php');
+        $this->redirect('auth/login');
     }
 }

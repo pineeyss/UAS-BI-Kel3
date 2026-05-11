@@ -1,56 +1,41 @@
 <?php
-// app/Models/UserModel.php
+require_once ROOT . '/core/Model.php';
 
-class UserModel
+class UserModel extends Model
 {
-    private PDO $db;
+    protected string $table = 'users';
 
-    public function __construct()
-    {
-        $this->db = Database::getConnection();
-    }
+    // Kolom tersedia: id, nama, username, password, role, created_at, updated_at
 
     public function findByUsername(string $username): array|false
     {
-        $stmt = $this->db->prepare("SELECT * FROM users WHERE username = ? LIMIT 1");
-        $stmt->execute([$username]);
-        return $stmt->fetch();
-    }
-
-    public function findById(int $id): array|false
-    {
-        $stmt = $this->db->prepare("SELECT id, nama, username, role, created_at FROM users WHERE id = ?");
-        $stmt->execute([$id]);
-        return $stmt->fetch();
-    }
-
-    public function all(): array
-    {
-        return $this->db->query("SELECT id, nama, username, role, created_at FROM users ORDER BY id")->fetchAll();
-    }
-
-    public function verifyPassword(string $plain, string $hash): bool
-    {
-        return password_verify($plain, $hash);
-    }
-
-    public function create(array $data): int
-    {
-        $stmt = $this->db->prepare(
-            "INSERT INTO users (nama, username, password, role) VALUES (?, ?, ?, ?)"
+        return $this->db->fetchOne(
+            "SELECT * FROM users WHERE username = ?",
+            [$username]
         );
-        $stmt->execute([
-            $data['nama'],
-            $data['username'],
-            password_hash($data['password'], PASSWORD_BCRYPT),
-            $data['role'] ?? 'user',
-        ]);
-        return (int)$this->db->lastInsertId();
     }
 
-    public function delete(int $id): bool
+    public function create(string $nama, string $username, string $password, string $role = 'user'): void
     {
-        $stmt = $this->db->prepare("DELETE FROM users WHERE id = ?");
-        return $stmt->execute([$id]);
+        $this->db->query(
+            "INSERT INTO users (nama, username, password, role, created_at, updated_at)
+             VALUES (?, ?, ?, ?, NOW(), NOW())",
+            [$nama, $username, password_hash($password, PASSWORD_BCRYPT), $role]
+        );
+    }
+
+    public function update(int $id, array $data): void
+    {
+        $sets   = [];
+        $params = [];
+        foreach ($data as $k => $v) {
+            $sets[]   = "$k = ?";
+            $params[] = $v;
+        }
+        $params[] = $id;
+        $this->db->query(
+            "UPDATE users SET " . implode(', ', $sets) . ", updated_at = NOW() WHERE id = ?",
+            $params
+        );
     }
 }

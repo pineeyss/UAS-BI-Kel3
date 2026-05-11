@@ -1,26 +1,30 @@
 <?php
+require_once ROOT . '/core/Controller.php';
+require_once ROOT . '/app/models/PengajuanModel.php';
 
-class DashboardController
+class DashboardController extends Controller
 {
+
     private PengajuanModel $model;
 
     public function __construct()
     {
-        requireLogin();
         $this->model = new PengajuanModel();
     }
 
     public function index(): void
     {
-        $stats  = $this->model->stats();
-        $latest = $this->model->latest(8);
+        $this->requireLogin();
 
-        $pageTitle    = 'Dashboard';
-        $pageSubtitle = 'Ringkasan monitoring pengajuan perbaikan jalan';
-        $activeMenu   = 'dashboard';
+        $kpi        = $this->model->getKpiStats();
+        $byStatus   = $this->model->getByStatus();
+        $terbaru    = $this->model->findAllWithFilter([], 1, 5);
 
-        include __DIR__ . '/../partials/header.php';
-        include __DIR__ . '/../Views/dashboard/index.php';
-        include __DIR__ . '/../partials/footer.php';
+        $this->view('dashboard/index', [
+            'title'    => 'Dashboard',
+            'kpi'      => $kpi,
+            'byStatus' => $byStatus,
+            'terbaru'  => $terbaru,
+        ]);
     }
 }
