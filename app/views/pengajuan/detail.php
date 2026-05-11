@@ -1,4 +1,4 @@
-pengajuan_detail = r"""<?php
+pengajuan_detail = "<?php
                         /** @var array $item */
                         $item = $item ?? [];
 

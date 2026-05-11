@@ -7,7 +7,7 @@ class Router
 
         $controllerName = isset($url[0]) && $url[0] !== ''
             ? ucfirst(strtolower($url[0])) . 'Controller'
-            : 'DashboardController';
+            : 'HomeController';
 
         $method = isset($url[1]) && $url[1] !== ''
             ? strtolower($url[1])
@@ -44,7 +44,7 @@ class Router
         if (isset($_GET['url'])) {
             return explode('/', filter_var(rtrim($_GET['url'], '/'), FILTER_SANITIZE_URL));
         }
-        return ['dashboard'];
+        return ['home'];
     }
 
     private function notFound(): void

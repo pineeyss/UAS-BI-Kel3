@@ -1,4 +1,4 @@
-pengajuan_form = r"""<?php
+<?php
                         /** @var string $action */
                         /** @var array  $errors */
                         /** @var array  $old */
