@@ -15,7 +15,8 @@ class UserModel extends Model
         );
     }
 
-    public function create(string $nama, string $username, string $password, string $role = 'user'): void
+    // Default role 'masyarakat' — konsisten dengan nilai role di sistem (header.php, DashboardController)
+    public function create(string $nama, string $username, string $password, string $role = 'masyarakat'): void
     {
         $this->db->query(
             "INSERT INTO users (nama, username, password, role, created_at, updated_at)

@@ -216,7 +216,6 @@
 
     <!-- SCRIPT -->
     <script>
-
         function togglePassword() {
 
             const input =
@@ -250,7 +249,6 @@
                 );
             }
         }
-
     </script>
 
 </body>
