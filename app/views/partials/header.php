@@ -1107,66 +1107,8 @@ $rm = $roleMeta[$role] ?? $roleMeta['masyarakat'];
                 </a>
             </div>
         </header>
-
-<<<<<<< HEAD
-        </aside>
-
-        <!-- MAIN -->
-        <main class="main-content">
-
-        <!-- TOPBAR -->
-        <header class="topbar">
-
-            <div class="page-header-modern">
-
-                <div>
-
-                    <h1 class="page-title-modern">
-
-                        <?= htmlspecialchars($title ?? '') ?>
-
-                    </h1>
-
-                    <p class="page-subtitle">
-
-                        Sistem Informasi Monitoring Perbaikan Jalan
-
-                    </p>
-
-                </div>
-
-                <div class="page-role">
-
-                    <i class="fa-solid fa-user-shield"></i>
-
-                    <?= ucfirst($_SESSION['role'] ?? '') ?>
-
-                </div>
-
-            </div>
-
-        </header>
-
-            <!-- FLASH -->
-            <?php if (!empty($_SESSION['flash'])): ?>
-
-                <div class="alert alert-<?= $_SESSION['flash']['type'] ?>">
-
-                    <?= htmlspecialchars($_SESSION['flash']['msg']) ?>
-
-                    <button
-                        class="alert-close"
-                        onclick="this.parentElement.remove()">
-
-                        &times;
-
-                    </button>
-
-                </div>
-
-=======
         <main class="page-content">
->>>>>>> 89759f71efaab53d24ced6b3403987a7c73d8fb2
+            
             <?php
             /* Flash message */
             if (!empty($_SESSION['flash'])):

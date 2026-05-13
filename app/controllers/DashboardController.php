@@ -12,7 +12,23 @@ class DashboardController extends Controller
         $this->model = new PengajuanModel();
     }
 
-<<<<<<< HEAD
+    /*
+    |--------------------------------------------------------------------------
+    | HELPER ROLE
+    |--------------------------------------------------------------------------
+    */
+    private function guardRole(string $role): void
+    {
+        if (
+            !isset($_SESSION['user']) ||
+            $_SESSION['user']['role'] !== $role
+        ) {
+
+            $this->redirect('auth/login');
+            exit;
+        }
+    }
+
     /*
     |--------------------------------------------------------------------------
     | DASHBOARD MASYARAKAT
@@ -20,90 +36,53 @@ class DashboardController extends Controller
     */
     public function index(): void
     {
-        $data = [
-            'title' => 'Dashboard Masyarakat'
-        ];
-
-        $this->view('dashboard/index', $data);
-=======
-    /* ── Helper: cek login & role ─────────────────────── */
-    private function guardRole(string $role): void
-    {
         if (!isset($_SESSION['user'])) {
-            $this->redirect('auth/login');
-            exit;
-        }
-        if ($_SESSION['user']['role'] !== $role) {
-            $this->redirect('auth/login');
-            exit;
-        }
-    }
 
-    /* ── MASYARAKAT ───────────────────────────────────── */
-    public function index(): void
-    {
-        if (!isset($_SESSION['user'])) {
             $this->redirect('auth/login');
-            return; // pastikan tidak lanjut jika redirect tidak memanggil exit
+            return;
         }
 
         $role = $_SESSION['user']['role'];
+
         if ($role === 'admin') {
             $this->redirect('dashboard/admin');
             return;
         }
+
         if ($role === 'dinas') {
             $this->redirect('dashboard/dinas');
             return;
         }
+
         if ($role === 'pimpinan') {
             $this->redirect('dashboard/pimpinan');
             return;
         }
 
-        $userId = $_SESSION['user']['id'];
-        $kpi    = $this->model->getKpiStats();
-        $myData = $this->model->findByUserId($userId, 5);
+        $kpi = $this->model->getKpiStats();
 
         $this->view('dashboard/index', [
-            'title'  => 'Dashboard Saya',
-            'kpi'    => $kpi,
-            'myData' => $myData,
+
+            'title' => 'Dashboard Masyarakat',
+
+            'kpi' => $kpi
         ]);
->>>>>>> 89759f71efaab53d24ced6b3403987a7c73d8fb2
     }
 
-    /* ── ADMIN ────────────────────────────────────────── */
+    /*
+    |--------------------------------------------------------------------------
+    | DASHBOARD ADMIN
+    |--------------------------------------------------------------------------
+    */
     public function admin(): void
     {
-<<<<<<< HEAD
-        if (
-            !isset($_SESSION['role']) ||
-            $_SESSION['role'] !== 'admin'
-        ) {
-=======
         $this->guardRole('admin');
->>>>>>> 89759f71efaab53d24ced6b3403987a7c73d8fb2
-
-        $kpi      = $this->model->getKpiStats();
-        $byStatus = $this->model->getByStatus();
-        $terbaru  = $this->model->findRecent(8);
-
-<<<<<<< HEAD
-            exit;
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | DATA DASHBOARD
-        |--------------------------------------------------------------------------
-        */
 
         $kpi        = $this->model->getKpiStats();
         $byStatus   = $this->model->getByStatus();
         $terbaru    = $this->model->findAllWithFilter([], 1, 5);
 
-        $data = [
+        $this->view('dashboard/admin', [
 
             'title'     => 'Dashboard Admin',
 
@@ -112,77 +91,89 @@ class DashboardController extends Controller
             'byStatus'  => $byStatus,
 
             'terbaru'   => $terbaru
-        ];
-
-        $this->view(
-            'dashboard/admin',
-            $data
-        );
-=======
-        $this->view('dashboard/admin', [
-            'title'    => 'Dashboard Admin',
-            'kpi'      => $kpi,
-            'byStatus' => $byStatus,
-            'terbaru'  => $terbaru,
         ]);
->>>>>>> 89759f71efaab53d24ced6b3403987a7c73d8fb2
     }
 
-    /* ── DINAS ────────────────────────────────────────── */
+    /*
+    |--------------------------------------------------------------------------
+    | DASHBOARD DINAS
+    |--------------------------------------------------------------------------
+    */
     public function dinas(): void
     {
-<<<<<<< HEAD
-        if (
-            !isset($_SESSION['role']) ||
-            $_SESSION['role'] !== 'dinas'
-        ) {
-=======
         $this->guardRole('dinas');
->>>>>>> 89759f71efaab53d24ced6b3403987a7c73d8fb2
 
-        $kpi         = $this->model->getKpiStats();
-        $antrian     = $this->model->findByStatus('diterima',   6);
-        $onProgress  = $this->model->findByStatus('diperbaiki', 6);
-        $recentDone  = $this->model->findByStatus('selesai',    6);
-        $byTingkat   = $this->model->getByTingkat();
+        $kpi = $this->model->getKpiStats();
+
+        $antrian = $this->model->findByStatus(
+            'diterima',
+            5
+        );
+
+        $onProgress = $this->model->findByStatus(
+            'diperbaiki',
+            5
+        );
+
+        $recentDone = $this->model->findByStatus(
+            'selesai',
+            5
+        );
+
+        $byTingkat = $this->model->getByTingkat();
 
         $this->view('dashboard/dinas', [
-            'title'       => 'Dashboard Dinas Teknis',
-            'kpi'         => $kpi,
-            'antrian'     => $antrian,
-            'onProgress'  => $onProgress,
-            'recentDone'  => $recentDone,
-            'byTingkat'   => $byTingkat,
+
+            'title' => 'Dashboard Dinas',
+
+            'kpi' => $kpi,
+
+            'antrian' => $antrian,
+
+            'onProgress' => $onProgress,
+
+            'recentDone' => $recentDone,
+
+            'byTingkat' => $byTingkat
         ]);
     }
 
-    /* ── PIMPINAN ─────────────────────────────────────── */
+    /*
+    |--------------------------------------------------------------------------
+    | DASHBOARD PIMPINAN
+    |--------------------------------------------------------------------------
+    */
     public function pimpinan(): void
     {
-<<<<<<< HEAD
-        if (
-            !isset($_SESSION['role']) ||
-            $_SESSION['role'] !== 'pimpinan'
-        ) {
-=======
         $this->guardRole('pimpinan');
->>>>>>> 89759f71efaab53d24ced6b3403987a7c73d8fb2
 
-        $kpi         = $this->model->getKpiStats();
-        $byStatus    = $this->model->getByStatus();
-        $trend       = $this->model->getTrendBulanan();
-        $byTingkat   = $this->model->getByTingkat();
-        $topJalan    = $this->model->getTopJalan(10);
+        $kpi = $this->model->getKpiStats();
+
+        $byStatus = $this->model->getByStatus();
+
+        $byTingkat = $this->model->getByTingkat();
+
+        $trend = $this->model->getTrendBulanan();
+
+        $topJalan = $this->model->getTopJalan();
+
         $responsRate = $this->model->getResponseRate();
 
         $this->view('dashboard/pimpinan', [
-            'title'       => 'Dashboard Pimpinan',
-            'kpi'         => $kpi,
-            'byStatus'    => $byStatus,
-            'trend'       => $trend,
-            'byTingkat'   => $byTingkat,
-            'topJalan'    => $topJalan,
-            'responsRate' => $responsRate,
+
+            'title' => 'Dashboard Pimpinan',
+
+            'kpi' => $kpi,
+
+            'byStatus' => $byStatus,
+
+            'trend' => $trend,
+
+            'byTingkat' => $byTingkat,
+
+            'topJalan' => $topJalan,
+
+            'responsRate' => $responsRate
         ]);
     }
 }
