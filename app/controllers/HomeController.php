@@ -21,7 +21,7 @@ class HomeController extends Controller
         $trend = $this->model->getTrendBulanan();
 
         $this->view('home/index', [
-            'title' => 'SIJALAN MIS',
+            'title' => 'RoadReport MIS',
             'kpi' => $kpi,
             'byStatus' => $byStatus,
             'trend' => $trend

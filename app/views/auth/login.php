@@ -8,7 +8,7 @@
         content="width=device-width, initial-scale=1.0">
 
     <title>
-        Login — SIJALAN
+        Login — RoadReport
     </title>
 
     <!-- ICON -->
@@ -37,7 +37,7 @@
 
             <!-- TITLE -->
             <h1>
-                SIJALAN
+                RoadReport MIS
             </h1>
 
             <p class="subtitle">
@@ -216,7 +216,6 @@
 
     <!-- SCRIPT -->
     <script>
-
         function togglePassword() {
 
             const input =
@@ -250,7 +249,6 @@
                 );
             }
         }
-
     </script>
 
 </body>

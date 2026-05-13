@@ -80,7 +80,7 @@ class AuthController extends Controller
             */
             $existing =
                 $this->userModel
-                    ->findByUsername($username);
+                ->findByUsername($username);
 
             if ($existing) {
 
@@ -125,8 +125,8 @@ class AuthController extends Controller
             */
             header(
                 'Location: ' .
-                BASE_URL .
-                'auth/login'
+                    BASE_URL .
+                    'auth/login'
             );
 
             exit;
@@ -199,7 +199,7 @@ class AuthController extends Controller
                 */
                 $user =
                     $this->userModel
-                        ->findByUsername($username);
+                    ->findByUsername($username);
 
                 /*
                 |--------------------------------------------------------------------------
@@ -311,8 +311,8 @@ class AuthController extends Controller
         */
         header(
             'Location: ' .
-            BASE_URL .
-            'home'
+                BASE_URL .
+                'home'
         );
 
         exit;
@@ -338,8 +338,8 @@ class AuthController extends Controller
 
                 header(
                     'Location: ' .
-                    BASE_URL .
-                    'dashboard/admin'
+                        BASE_URL .
+                        'dashboard/admin'
                 );
 
                 break;
@@ -353,8 +353,8 @@ class AuthController extends Controller
 
                 header(
                     'Location: ' .
-                    BASE_URL .
-                    'dashboard/dinas'
+                        BASE_URL .
+                        'dashboard/dinas'
                 );
 
                 break;
@@ -368,8 +368,8 @@ class AuthController extends Controller
 
                 header(
                     'Location: ' .
-                    BASE_URL .
-                    'dashboard/pimpinan'
+                        BASE_URL .
+                        'dashboard/pimpinan'
                 );
 
                 break;
@@ -383,8 +383,8 @@ class AuthController extends Controller
 
                 header(
                     'Location: ' .
-                    BASE_URL .
-                    'dashboard'
+                        BASE_URL .
+                        'dashboard'
                 );
 
                 break;
