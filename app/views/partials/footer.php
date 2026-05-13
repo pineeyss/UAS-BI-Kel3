@@ -1,7 +1,7 @@
 </main><!-- /.page-content -->
 
 <footer style="padding:18px 28px;border-top:1px solid var(--border-soft);font-size:12px;color:var(--text-light);display:flex;justify-content:space-between;align-items:center;background:var(--surface);">
-    <span>© <?= date('Y') ?> <strong>SIJALAN</strong> — Sistem Informasi Manajemen Perbaikan Jalan</span>
+    <span>© <?= date('Y') ?> <strong>RoadReport</strong> — Sistem Informasi Manajemen Perbaikan Jalan</span>
     <span>MIS &amp; Business Intelligence</span>
 </footer>
 </div><!-- /.main-wrapper -->
