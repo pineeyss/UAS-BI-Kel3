@@ -12,35 +12,31 @@ class PengajuanModel extends Model
     {
         [$where, $params] = $this->buildWhere($filter);
         $offset = ($page - 1) * $perPage;
-        return $this->db->fetchAll(
-            "SELECT
-                flj.id,
-                dl.nama_jalan,
-                ds.statuslaporan,
-                dk.tingkat_prioritas AS tingkat_kerusakan,
-                flj.id_waktu AS created_at
+            return $this->db->fetchAll(
+                "SELECT
+                    flj.id,
+                    dl.nama_jalan,
+                    flj.statuslaporan,
+                    flj.tingkat_kerusakan,
+                    flj.created_at,
+                    flj.updated_at,
+                    flj.verified_at
 
-            FROM fact_laporan_jalan flj
+                FROM fact_laporan_jalan flj
 
-            LEFT JOIN dim_lokasi dl
-            ON flj.id_lokasi = dl.id_lokasi
+                LEFT JOIN dim_lokasi dl
+                ON flj.id_lokasi = dl.id_lokasi
 
-            LEFT JOIN dim_status ds
-            ON flj.id_status = ds.id_status
+                LEFT JOIN dim_status ds
+                ON flj.id_status = ds.id_status
 
-            LEFT JOIN fact_kerusakan_jalan fkj
-            ON flj.id = fkj.id_laporan
+                WHERE $where
 
-            LEFT JOIN dim_kerusakan dk
-            ON fkj.id_kerusakan = dk.id_kerusakan
+                ORDER BY flj.id DESC
 
-            WHERE $where
-
-            ORDER BY flj.id DESC
-
-            LIMIT $perPage OFFSET $offset",
-            $params
-        );
+                LIMIT $perPage OFFSET $offset",
+                $params
+            );
     }
 
     public function countWithFilter(array $filter = []): int
@@ -107,7 +103,21 @@ class PengajuanModel extends Model
     public function findRecent(int $limit = 10): array
     {
         return $this->db->fetchAll(
-            "SELECT * FROM {$this->table} ORDER BY created_at DESC LIMIT ?",
+            "SELECT
+                flj.id,
+                dl.nama_jalan,
+                flj.statuslaporan,
+                flj.tingkat_kerusakan,
+                flj.created_at
+
+            FROM fact_laporan_jalan flj
+
+            LEFT JOIN dim_lokasi dl
+            ON flj.id_lokasi = dl.id_lokasi
+
+            ORDER BY flj.id DESC
+
+            LIMIT ?",
             [$limit]
         );
     }
@@ -115,8 +125,25 @@ class PengajuanModel extends Model
     public function findByStatus(string $status, int $limit = 10): array
     {
         return $this->db->fetchAll(
-            "SELECT * FROM {$this->table}
-             WHERE statuslaporan = ? ORDER BY created_at DESC LIMIT ?",
+            "SELECT
+                flj.id,
+                dl.nama_jalan,
+                ds.statuslaporan,
+                flj.id_waktu AS created_at
+
+            FROM fact_laporan_jalan flj
+
+            LEFT JOIN dim_lokasi dl
+            ON flj.id_lokasi = dl.id_lokasi
+
+            LEFT JOIN dim_status ds
+            ON flj.id_status = ds.id_status
+
+            WHERE ds.statuslaporan = ?
+
+            ORDER BY flj.id DESC
+
+            LIMIT ?",
             [$status, $limit]
         );
     }
@@ -285,22 +312,37 @@ class PengajuanModel extends Model
 
     public function getByTingkat(): array
     {
-        return $this->db->fetchAll(
-            "SELECT tingkat_kerusakan AS tingkat, COUNT(*) AS jumlah
-             FROM pengajuan
-             WHERE tingkat_kerusakan IS NOT NULL
-             GROUP BY tingkat_kerusakan ORDER BY FIELD(tingkat_kerusakan,'ringan','sedang','berat')"
-        );
+        return $this->db->fetchAll("
+            SELECT
+                dk.tingkat_prioritas AS tingkat,
+                COUNT(*) AS jumlah
+
+            FROM fact_kerusakan_jalan fkj
+
+            LEFT JOIN dim_kerusakan dk
+            ON fkj.id_kerusakan = dk.id_kerusakan
+
+            GROUP BY dk.tingkat_prioritas
+        ");
     }
 
     public function getTopJalan(int $limit = 10): array
     {
         return $this->db->fetchAll(
-            "SELECT nama_jalan, COUNT(*) AS jumlah
-             FROM pengajuan
-             GROUP BY nama_jalan
-             ORDER BY jumlah DESC
-             LIMIT ?",
+            "SELECT
+                dl.nama_jalan,
+                COUNT(*) AS jumlah
+
+            FROM fact_laporan_jalan flj
+
+            LEFT JOIN dim_lokasi dl
+            ON flj.id_lokasi = dl.id_lokasi
+
+            GROUP BY dl.nama_jalan
+
+            ORDER BY jumlah DESC
+
+            LIMIT ?",
             [$limit]
         );
     }
@@ -311,8 +353,12 @@ class PengajuanModel extends Model
         $row = $this->db->fetchOne(
             "SELECT
                 COUNT(*) AS total,
-                SUM(statuslaporan = 'selesai') AS selesai
-             FROM pengajuan"
+                SUM(ds.statuslaporan = 'selesai') AS selesai
+
+            FROM fact_laporan_jalan flj
+
+            LEFT JOIN dim_status ds
+            ON flj.id_status = ds.id_status"
         );
         if (!$row || (int)$row['total'] === 0) return 0.0;
         return round((int)$row['selesai'] / (int)$row['total'] * 100, 1);
@@ -344,17 +390,17 @@ class PengajuanModel extends Model
 
                 LOWER(ds.statuslaporan) AS status,
 
-                'sedang' AS tingkat_kerusakan,
+                LOWER(flj.tingkat_kerusakan) AS tingkat_kerusakan,
 
-                flj.id_waktu AS created_at
+                flj.created_at
 
             FROM fact_laporan_jalan flj
 
             LEFT JOIN dim_lokasi dl
-            ON flj.id_lokasi = dl.id_lokasi
+                ON flj.id_lokasi = dl.id_lokasi
 
             LEFT JOIN dim_status ds
-            ON flj.id_status = ds.id_status
+                ON flj.id_status = ds.id_status
 
             WHERE dl.latitude IS NOT NULL
             AND dl.longitude IS NOT NULL

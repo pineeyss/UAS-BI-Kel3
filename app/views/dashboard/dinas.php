@@ -183,7 +183,19 @@ require ROOT . '/app/views/partials/header.php';
                             <tr>
                                 <td><a href="<?= BASE_URL ?>pengajuan/detail/<?= $row['id'] ?>">#<?= $row['id'] ?></a></td>
                                 <td style="max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><?= htmlspecialchars($row['nama_jalan']) ?></td>
-                                <td style="font-size:12.5px;color:var(--text-muted);"><?= $row['updated_at'] ? date('d/m/Y', strtotime($row['updated_at'])) : '—' ?></td>
+                                <td style="font-size:12.5px;color:var(--text-muted);">
+                                    <?php
+                                        $tanggal = $row['created_at'] ?? null;
+
+                                        if ($tanggal) {
+                                            echo substr($tanggal, 6, 2) . '/' .
+                                                substr($tanggal, 4, 2) . '/' .
+                                                substr($tanggal, 0, 4);
+                                        } else {
+                                            echo '-';
+                                        }
+                                        ?>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>

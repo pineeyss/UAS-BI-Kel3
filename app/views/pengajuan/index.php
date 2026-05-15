@@ -134,17 +134,26 @@ require ROOT . '/app/views/partials/header.php';
                                     </div>
                                 </td>
                                 <td>
-                                    <?php $t = $row['tingkat_kerusakan'] ?? null; ?>
+                                    <?php $t = strtolower($row['tingkat_kerusakan'] ?? ''); ?>
+
                                     <?php if ($t): ?>
-                                        <span class="badge" style="background:<?= match ($t) {
-                                                                                    'berat'  => '#fef2f2',
-                                                                                    'sedang' => '#fff7ed',
-                                                                                    default  => '#f0fdf4'
-                                                                                } ?>;color:<?= match ($t) {
-                                                                                                'berat'  => '#991b1b',
-                                                                                                'sedang' => '#c2410c',
-                                                                                                default  => '#166534'
-                                                                                            } ?>;"><?= ucfirst($t) ?></span>
+                                        <span class="badge"
+                                            style="background:
+                                            <?= match ($t) {
+                                                'tinggi' => '#fef2f2',
+                                                'sedang' => '#fff7ed',
+                                                default  => '#f0fdf4'
+                                            } ?>;
+
+                                            color:
+                                            <?= match ($t) {
+                                                'tinggi' => '#991b1b',
+                                                'sedang' => '#c2410c',
+                                                default  => '#166534'
+                                            } ?>;">
+
+                                            <?= ucfirst($t) ?>
+                                        </span>
                                     <?php else: ?>
                                         <span style="color:var(--text-light);font-size:12px;">—</span>
                                     <?php endif; ?>
@@ -172,7 +181,15 @@ require ROOT . '/app/views/partials/header.php';
                                 </td>
                                 <?php if (in_array($role, ['admin', 'dinas'])): ?>
                                     <td style="font-size:12px;color:var(--text-muted);">
-                                        <?= $row['verified_at'] ? date('d/m/Y', strtotime($row['verified_at'])) : '<span style="color:var(--text-light);">Belum</span>' ?>
+                                        <?php if (!empty($row['statuslaporan']) && $row['statuslaporan'] != 'diterima'): ?>
+                                                <span style="color:green;font-weight:600;">
+                                                    Sudah
+                                                </span>
+                                            <?php else: ?>
+                                                <span style="color:var(--text-light);">
+                                                    Belum
+                                                </span>
+                                            <?php endif; ?>
                                     </td>
                                 <?php endif; ?>
                                 <td>

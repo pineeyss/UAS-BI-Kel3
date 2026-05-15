@@ -151,7 +151,7 @@ $extraScript = '
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
 <script>
 const defaultCenter = [-6.73, 108.57];
-const defaultZoom   = 7;
+const defaultZoom   = 6;
 
 const map = L.map("map").setView(defaultCenter, defaultZoom);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -205,8 +205,31 @@ function buildMarker(row) {
     if (isNaN(lat) || isNaN(lng)) return null;
 
     const color  = colors[row.status] || "#64748b";
+    const tingkatValue = (row.tingkat_kerusakan || "").toLowerCase();
+
     const tingkat = row.tingkat_kerusakan
-        ? `<span style="font-size:11px;background:${row.tingkat_kerusakan==="berat"?"#fef2f2":row.tingkat_kerusakan==="sedang"?"#fff7ed":"#f0fdf4"};color:${row.tingkat_kerusakan==="berat"?"#991b1b":row.tingkat_kerusakan==="sedang"?"#c2410c":"#166534"};padding:2px 7px;border-radius:999px;font-weight:700;">${row.tingkat_kerusakan.charAt(0).toUpperCase()+row.tingkat_kerusakan.slice(1)}</span>`
+        ? `<span style="
+            font-size:11px;
+            background:${
+                tingkatValue === "tinggi"
+                    ? "#fef2f2"
+                    : tingkatValue === "sedang"
+                    ? "#fff7ed"
+                    : "#f0fdf4"
+            };
+            color:${
+                tingkatValue === "tinggi"
+                    ? "#991b1b"
+                    : tingkatValue === "sedang"
+                    ? "#c2410c"
+                    : "#166534"
+            };
+            padding:2px 7px;
+            border-radius:999px;
+            font-weight:700;
+        ">
+            ${row.tingkat_kerusakan}
+        </span>`
         : "";
 
     const m = L.marker([lat, lng], { icon: makeIcon(color) });
@@ -233,36 +256,51 @@ function renderMarkers(rows) {
     clusterGroup.clearLayers();
     plainGroup.clearLayers();
 
+    const bounds = [];
+
     rows.forEach(row => {
+
+        const marker = buildMarker(row);
+
+        if (!marker) return;
 
         const lat = parseFloat(row.latitude);
         const lng = parseFloat(row.longitude);
 
-        if (isNaN(lat) || isNaN(lng)) return;
+        if (clusterMode) {
+            clusterGroup.addLayer(marker);
+        } else {
+            plainGroup.addLayer(marker);
+        }
 
-        const color = colors[row.status] || "#64748b";
-
-        const marker = L.circleMarker([lat, lng], {
-            radius: 6,
-            fillColor: color,
-            color: "#fff",
-            weight: 2,
-            opacity: 1,
-            fillOpacity: 0.9
-        });
-
-        marker.bindPopup(`
-            <div style="font-size:13px">
-                <b>${row.nama_jalan}</b><br>
-                Status: ${row.status}
-            </div>
-        `);
-
-        plainGroup.addLayer(marker);
+        bounds.push([lat, lng]);
     });
 
-    if (!map.hasLayer(plainGroup)) {
-        map.addLayer(plainGroup);
+    if (clusterMode) {
+
+        if (!map.hasLayer(clusterGroup)) {
+            map.addLayer(clusterGroup);
+        }
+
+        if (map.hasLayer(plainGroup)) {
+            map.removeLayer(plainGroup);
+        }
+
+    } else {
+
+        if (!map.hasLayer(plainGroup)) {
+            map.addLayer(plainGroup);
+        }
+
+        if (map.hasLayer(clusterGroup)) {
+            map.removeLayer(clusterGroup);
+        }
+    }
+
+    if (bounds.length > 0) {
+        map.fitBounds(bounds, {
+            padding: [40, 40]
+        });
     }
 }
 
@@ -326,8 +364,14 @@ function locateMe() {
 
 function updateStats(rows) {
     document.getElementById("statTotal").textContent   = rows.length;
-    document.getElementById("statBerat").textContent   = rows.filter(r => r.tingkat_kerusakan === "berat").length;
-    document.getElementById("statSelesai").textContent = rows.filter(r => r.status === "selesai").length;
+
+    document.getElementById("statBerat").textContent =
+        rows.filter(r =>
+    (r.tingkat_kerusakan || "").toLowerCase() === "tinggi"
+).length;
+
+    document.getElementById("statSelesai").textContent =
+        rows.filter(r => r.status === "selesai").length;
 }
 </script>';
 ?>

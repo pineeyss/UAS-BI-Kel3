@@ -95,21 +95,26 @@ require ROOT . '/app/views/partials/header.php';
                                 <td style="max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
                                     <?= htmlspecialchars($row['nama_jalan']) ?>
                                 </td>
-                                <td>
-                                    <?php if ($row['tingkat_kerusakan']): ?>
-                                        <span class="badge" style="background:<?= match ($row['tingkat_kerusakan']) {
-                                                                                    'berat'  => '#fef2f2',
-                                                                                    'sedang' => '#fff7ed',
-                                                                                    default => '#f0fdf4'
-                                                                                } ?>;color:<?= match ($row['tingkat_kerusakan']) {
-                                                                                                'berat'  => '#991b1b',
-                                                                                                'sedang' => '#c2410c',
-                                                                                                default => '#166534'
-                                                                                            } ?>;"><?= ucfirst($row['tingkat_kerusakan']) ?></span>
-                                    <?php else: ?>
-                                        <span style="color:var(--text-light);font-size:12px;">—</span>
-                                    <?php endif; ?>
-                                </td>
+                                    <td>
+                                        <?php if (!empty($row['tingkat_kerusakan'])): ?>
+                                            <span class="badge" style="
+                                                background: <?= match(strtolower($row['tingkat_kerusakan'])) {
+                                                    'tinggi' => '#fef2f2',
+                                                    'sedang' => '#fff7ed',
+                                                    default => '#f0fdf4'
+                                                } ?>;
+                                                color: <?= match(strtolower($row['tingkat_kerusakan'])) {
+                                                    'tinggi' => '#991b1b',
+                                                    'sedang' => '#c2410c',
+                                                    default => '#166534'
+                                                } ?>;
+                                            ">
+                                                <?= ucfirst($row['tingkat_kerusakan']) ?>
+                                            </span>
+                                        <?php else: ?>
+                                            <span style="color:#94a3b8;">-</span>
+                                        <?php endif; ?>
+                                    </td>
                                 <td>
                                     <span class="badge status-<?= strtolower($row['statuslaporan']) ?>">
                                         <?= ucfirst($row['statuslaporan']) ?>
