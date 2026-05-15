@@ -155,7 +155,20 @@ require ROOT . '/app/views/partials/header.php';
                                     </span>
                                 </td>
                                 <td style="font-size:12.5px;color:var(--text-muted);white-space:nowrap;">
-                                    <?= date('d/m/Y', strtotime($row['created_at'])) ?>
+                                    <?php
+                                        $tanggal = $row['created_at'] ?? null;
+
+                                        if ($tanggal) {
+                                            $tanggalFormat =
+                                                substr($tanggal, 6, 2) . '/' .
+                                                substr($tanggal, 4, 2) . '/' .
+                                                substr($tanggal, 0, 4);
+
+                                            echo $tanggalFormat;
+                                        } else {
+                                            echo '-';
+                                        }
+                                        ?>
                                 </td>
                                 <?php if (in_array($role, ['admin', 'dinas'])): ?>
                                     <td style="font-size:12px;color:var(--text-muted);">

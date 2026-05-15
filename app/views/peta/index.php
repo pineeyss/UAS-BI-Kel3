@@ -151,7 +151,7 @@ $extraScript = '
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
 <script>
 const defaultCenter = [-6.73, 108.57];
-const defaultZoom   = 11;
+const defaultZoom   = 7;
 
 const map = L.map("map").setView(defaultCenter, defaultZoom);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -178,15 +178,16 @@ function makeIcon(color, size = 13) {
 
 let allData       = [];
 let currentFilter = "all";
-let clusterMode   = true;
+let clusterMode   = false;
 let clusterGroup  = L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 50 });
 let plainGroup    = L.layerGroup();
 
-map.addLayer(clusterGroup);
+map.addLayer(plainGroup);
 
 fetch("' . BASE_URL . 'peta/data")
     .then(r => r.json())
     .then(rows => {
+        console.log(rows);
         document.getElementById("mapLoading").style.display = "none";
         allData = rows;
         renderMarkers(rows);
@@ -200,6 +201,7 @@ fetch("' . BASE_URL . 'peta/data")
 function buildMarker(row) {
     const lat   = parseFloat(row.latitude);
     const lng   = parseFloat(row.longitude);
+    console.log(row.latitude, row.longitude);
     if (isNaN(lat) || isNaN(lng)) return null;
 
     const color  = colors[row.status] || "#64748b";
@@ -227,18 +229,41 @@ function buildMarker(row) {
 }
 
 function renderMarkers(rows) {
+
     clusterGroup.clearLayers();
     plainGroup.clearLayers();
 
     rows.forEach(row => {
-        const m = buildMarker(row);
-        if (!m) return;
-        if (clusterMode) clusterGroup.addLayer(m);
-        else             plainGroup.addLayer(m);
+
+        const lat = parseFloat(row.latitude);
+        const lng = parseFloat(row.longitude);
+
+        if (isNaN(lat) || isNaN(lng)) return;
+
+        const color = colors[row.status] || "#64748b";
+
+        const marker = L.circleMarker([lat, lng], {
+            radius: 6,
+            fillColor: color,
+            color: "#fff",
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.9
+        });
+
+        marker.bindPopup(`
+            <div style="font-size:13px">
+                <b>${row.nama_jalan}</b><br>
+                Status: ${row.status}
+            </div>
+        `);
+
+        plainGroup.addLayer(marker);
     });
 
-    if (!clusterMode && !map.hasLayer(plainGroup)) map.addLayer(plainGroup);
-    if (clusterMode  && !map.hasLayer(clusterGroup)) map.addLayer(clusterGroup);
+    if (!map.hasLayer(plainGroup)) {
+        map.addLayer(plainGroup);
+    }
 }
 
 function filterMarkers(status, el) {

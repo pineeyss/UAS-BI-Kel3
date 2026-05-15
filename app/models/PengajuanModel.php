@@ -3,7 +3,7 @@ require_once ROOT . '/core/Model.php';
 
 class PengajuanModel extends Model
 {
-    protected string $table = 'pengajuan';
+    protected string $table = 'fact_laporan_jalan';
 
     /* ══════════════════════════════════════════════════════
        BACA — Filter + Paginasi
@@ -13,9 +13,32 @@ class PengajuanModel extends Model
         [$where, $params] = $this->buildWhere($filter);
         $offset = ($page - 1) * $perPage;
         return $this->db->fetchAll(
-            "SELECT * FROM {$this->table}
-             WHERE $where ORDER BY created_at DESC
-             LIMIT $perPage OFFSET $offset",
+            "SELECT
+                flj.id,
+                dl.nama_jalan,
+                ds.statuslaporan,
+                dk.tingkat_prioritas AS tingkat_kerusakan,
+                flj.id_waktu AS created_at
+
+            FROM fact_laporan_jalan flj
+
+            LEFT JOIN dim_lokasi dl
+            ON flj.id_lokasi = dl.id_lokasi
+
+            LEFT JOIN dim_status ds
+            ON flj.id_status = ds.id_status
+
+            LEFT JOIN fact_kerusakan_jalan fkj
+            ON flj.id = fkj.id_laporan
+
+            LEFT JOIN dim_kerusakan dk
+            ON fkj.id_kerusakan = dk.id_kerusakan
+
+            WHERE $where
+
+            ORDER BY flj.id DESC
+
+            LIMIT $perPage OFFSET $offset",
             $params
         );
     }
@@ -36,25 +59,20 @@ class PengajuanModel extends Model
         $params = [];
 
         if (!empty($filter['status'])) {
-            $where[]  = 'statuslaporan = ?';
+            $where[]  = 'ds.statuslaporan = ?';
             $params[] = $filter['status'];
         }
+
         if (!empty($filter['tingkat'])) {
-            $where[]  = 'tingkat_kerusakan = ?';
+            $where[]  = 'dk.tingkat_prioritas = ?';
             $params[] = $filter['tingkat'];
         }
+
         if (!empty($filter['search'])) {
-            $where[]  = 'nama_jalan LIKE ?';
+            $where[]  = 'dl.nama_jalan LIKE ?';
             $params[] = '%' . $filter['search'] . '%';
         }
-        if (!empty($filter['tanggal_dari'])) {
-            $where[]  = 'DATE(created_at) >= ?';
-            $params[] = $filter['tanggal_dari'];
-        }
-        if (!empty($filter['tanggal_sampai'])) {
-            $where[]  = 'DATE(created_at) <= ?';
-            $params[] = $filter['tanggal_sampai'];
-        }
+
         return [implode(' AND ', $where), $params];
     }
 
@@ -214,35 +232,55 @@ class PengajuanModel extends Model
     ══════════════════════════════════════════════════════ */
     public function getKpiStats(): array
     {
-        $row = $this->db->fetchOne(
-            "SELECT
-                COUNT(*)                                                          AS total,
-                SUM(statuslaporan = 'diterima')                                  AS diterima,
-                SUM(statuslaporan = 'diperbaiki')                                AS diperbaiki,
-                SUM(statuslaporan = 'selesai')                                   AS selesai,
-                SUM(statuslaporan = 'ditolak')                                   AS ditolak,
-                SUM(MONTH(created_at)=MONTH(NOW()) AND YEAR(created_at)=YEAR(NOW())) AS bulan_ini
-             FROM pengajuan"
-        );
+        $row = $this->db->fetchOne("
+            SELECT
+                COUNT(*) AS total,
+
+                SUM(ds.statuslaporan = 'diterima') AS diterima,
+
+                SUM(ds.statuslaporan = 'diperbaiki') AS diperbaiki,
+
+                SUM(ds.statuslaporan = 'selesai') AS selesai,
+
+                SUM(ds.statuslaporan = 'ditolak') AS ditolak
+
+            FROM fact_laporan_jalan flj
+
+            LEFT JOIN dim_status ds
+            ON flj.id_status = ds.id_status
+        ");
+
         return $row ?: [];
     }
 
     public function getByStatus(): array
     {
-        return $this->db->fetchAll(
-            "SELECT statuslaporan AS status, COUNT(*) AS jumlah
-             FROM pengajuan GROUP BY statuslaporan"
-        );
+        return $this->db->fetchAll("
+            SELECT
+                ds.statuslaporan AS status,
+                COUNT(*) AS jumlah
+            FROM fact_laporan_jalan flj
+
+            LEFT JOIN dim_status ds
+            ON flj.id_status = ds.id_status
+
+            GROUP BY ds.statuslaporan
+        ");
     }
 
     public function getTrendBulanan(): array
     {
-        return $this->db->fetchAll(
-            "SELECT DATE_FORMAT(created_at,'%Y-%m') AS bulan, COUNT(*) AS jumlah
-             FROM pengajuan
-             WHERE created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
-             GROUP BY bulan ORDER BY bulan ASC"
-        );
+        return $this->db->fetchAll("
+            SELECT
+                LEFT(flj.id_waktu, 6) AS bulan,
+                COUNT(*) AS jumlah
+
+            FROM fact_laporan_jalan flj
+
+            GROUP BY LEFT(flj.id_waktu, 6)
+
+            ORDER BY bulan ASC
+        ");
     }
 
     public function getByTingkat(): array
@@ -295,14 +333,32 @@ class PengajuanModel extends Model
     ══════════════════════════════════════════════════════ */
     public function getForMap(): array
     {
-        return $this->db->fetchAll(
-            "SELECT id, nama_jalan, foto_path, latitude, longitude,
-                    created_at, statuslaporan AS status, tingkat_kerusakan
-             FROM pengajuan
-             WHERE statuslaporan != 'ditolak'
-               AND latitude  != 0
-               AND longitude != 0"
-        );
+        return $this->db->fetchAll("
+            SELECT
+                flj.id,
+
+                dl.nama_jalan,
+
+                dl.latitude,
+                dl.longitude,
+
+                LOWER(ds.statuslaporan) AS status,
+
+                'sedang' AS tingkat_kerusakan,
+
+                flj.id_waktu AS created_at
+
+            FROM fact_laporan_jalan flj
+
+            LEFT JOIN dim_lokasi dl
+            ON flj.id_lokasi = dl.id_lokasi
+
+            LEFT JOIN dim_status ds
+            ON flj.id_status = ds.id_status
+
+            WHERE dl.latitude IS NOT NULL
+            AND dl.longitude IS NOT NULL
+        ");
     }
 
     public function getKecamatanList(): array

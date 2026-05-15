@@ -56,7 +56,9 @@ if (!function_exists('str_starts_with')) {
 }
 function isActive(string $url, string $current): string
 {
-    return str_starts_with($current, $url) ? 'active' : '';
+    return trim($current, '/') === trim($url, '/')
+        ? 'active'
+        : '';
 }
 
 /* ── Role badge ─────────────────────────────────────────── */
